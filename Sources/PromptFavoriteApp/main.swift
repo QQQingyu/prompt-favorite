@@ -6,11 +6,45 @@ enum Language {
     case en
 }
 
+enum LanguageMode: String, CaseIterable {
+    case system
+    case zh
+    case en
+
+    var title: String {
+        switch self {
+        case .system:
+            return L10n.text("language.system")
+        case .zh:
+            return L10n.text("language.zh")
+        case .en:
+            return L10n.text("language.en")
+        }
+    }
+}
+
 enum L10n {
-    static let language: Language = {
+    private static var languageMode: LanguageMode = .system
+
+    static func configure(languageMode: LanguageMode) {
+        self.languageMode = languageMode
+    }
+
+    private static var systemLanguage: Language {
         let preferred = Locale.preferredLanguages.first?.lowercased() ?? ""
         return preferred.hasPrefix("zh") ? .zh : .en
-    }()
+    }
+
+    static var language: Language {
+        switch languageMode {
+        case .system:
+            return systemLanguage
+        case .zh:
+            return .zh
+        case .en:
+            return .en
+        }
+    }
 
     static func text(_ key: String) -> String {
         switch language {
@@ -35,9 +69,13 @@ enum L10n {
         "menu.saveFormatSettings": "保存格式设置...",
         "menu.globalTrigger": "全局触发方式",
         "menu.captureBehavior": "收藏行为",
+        "menu.language": "界面语言",
         "menu.openTargetFolder": "打开目标文件夹",
         "menu.openAccessibilitySettings": "打开辅助功能权限设置",
         "menu.quit": "退出 Prompt Favorite",
+        "language.system": "跟随系统",
+        "language.zh": "中文",
+        "language.en": "English",
         "alert.savePrompt.title": "保存 Prompt",
         "alert.savePrompt.message": "选择这条 prompt 追加到哪里。",
         "button.save": "保存",
@@ -78,9 +116,13 @@ enum L10n {
         "menu.saveFormatSettings": "Save Format Settings...",
         "menu.globalTrigger": "Global Trigger",
         "menu.captureBehavior": "Capture Behavior",
+        "menu.language": "Language",
         "menu.openTargetFolder": "Open Target Folder",
         "menu.openAccessibilitySettings": "Open Accessibility Settings",
         "menu.quit": "Quit Prompt Favorite",
+        "language.system": "Follow System",
+        "language.zh": "中文",
+        "language.en": "English",
         "alert.savePrompt.title": "Save Prompt",
         "alert.savePrompt.message": "Choose where this prompt should be appended.",
         "button.save": "Save",
@@ -173,6 +215,13 @@ struct AppSettings {
             CaptureBehavior(rawValue: defaults.string(forKey: "captureBehavior") ?? "") ?? .review
         }
         set { defaults.set(newValue.rawValue, forKey: "captureBehavior") }
+    }
+
+    var languageMode: LanguageMode {
+        get {
+            LanguageMode(rawValue: defaults.string(forKey: "languageMode") ?? "") ?? .system
+        }
+        set { defaults.set(newValue.rawValue, forKey: "languageMode") }
     }
 
     var titleTemplate: String {
@@ -283,8 +332,6 @@ final class PromptStore {
         created: \(stamp)
         updated: \(stamp)
         ---
-
-        # \(title)
 
         """
     }
@@ -819,6 +866,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        L10n.configure(languageMode: settings.languageMode)
         setupStatusItem()
         installEventMonitors()
     }
@@ -879,6 +927,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let behaviorItem = NSMenuItem(title: L10n.text("menu.captureBehavior"), action: nil, keyEquivalent: "")
         behaviorItem.submenu = behaviorMenu
         menu.addItem(behaviorItem)
+
+        let languageMenu = NSMenu()
+        for mode in LanguageMode.allCases {
+            let item = NSMenuItem(title: mode.title, action: #selector(setLanguageMode(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = mode.rawValue
+            item.state = mode == settings.languageMode ? .on : .off
+            languageMenu.addItem(item)
+        }
+        let languageItem = NSMenuItem(title: L10n.text("menu.language"), action: nil, keyEquivalent: "")
+        languageItem.submenu = languageMenu
+        menu.addItem(languageItem)
 
         menu.addItem(actionItem(L10n.text("menu.openTargetFolder"), #selector(openTargetFolder)))
         menu.addItem(actionItem(L10n.text("menu.openAccessibilitySettings"), #selector(openAccessibilitySettings)))
@@ -1208,6 +1268,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         settings.captureBehavior = behavior
+        refreshMenu()
+    }
+
+    @objc private func setLanguageMode(_ sender: NSMenuItem) {
+        guard
+            let rawValue = sender.representedObject as? String,
+            let mode = LanguageMode(rawValue: rawValue)
+        else {
+            return
+        }
+        settings.languageMode = mode
+        L10n.configure(languageMode: mode)
         refreshMenu()
     }
 

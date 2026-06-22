@@ -27,7 +27,7 @@ The target folder is just a local folder. It can be a standalone prompt vault, a
 - **Review or quick save**: either confirm the title, folder, file, and body before saving, or append immediately.
 - **Collection files**: append many prompt entries to one Markdown file instead of creating a new note every time.
 - **Folder picker**: choose the target folder through macOS, no path typing required.
-- **Bilingual UI**: English and Chinese, following your macOS preferred language.
+- **Bilingual UI**: English and Chinese, with Follow System as the default and manual language selection in the menu.
 - **Obsidian-friendly**: every collection is a normal `.md` file with frontmatter and readable headings.
 
 ## Install
@@ -101,6 +101,7 @@ You can point the target folder to any Obsidian vault folder, for example:
 - **Save Format Settings...**: configure collection file, heading template, timestamp format, separator, and code fence language.
 - **Global Trigger**: choose Double Option, Command + Option + P, Command + Shift + P, or Off.
 - **Capture Behavior**: choose Review Before Save or Quick Save.
+- **Language**: choose Follow System, Chinese, or English.
 - **Open Target Folder**: open the current prompt collection folder.
 - **Open Accessibility Settings**: jump to macOS permission settings.
 
@@ -117,8 +118,6 @@ folder: "/Users/you/Documents/Prompt Favorite"
 created: 2026-06-22T09:30:00Z
 updated: 2026-06-22T09:35:00Z
 ---
-
-# Favorites
 ````
 
 Each saved prompt is appended as a structured entry:
