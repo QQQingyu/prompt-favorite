@@ -108,8 +108,7 @@ You can point the target folder to any Obsidian vault folder, for example:
 - **Language**: choose Follow System, Chinese, or English.
 - **Launch at Startup**: start Prompt Favorite automatically when macOS starts.
 - **Open Target Folder**: open the current prompt collection folder.
-- **Check Capture Permission**: show whether the current installed app passes the macOS Accessibility trust check.
-- **Open Accessibility Settings**: jump to macOS permission settings.
+- **Capture Permission**: view the current Accessibility trust status, run a permission check, or open macOS permission settings.
 
 ## Markdown Format
 

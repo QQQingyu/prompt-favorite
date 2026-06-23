@@ -103,6 +103,7 @@ enum L10n {
         "permission.title": "捕获权限",
         "permission.trusted": "辅助功能校验：已通过",
         "permission.untrusted": "辅助功能校验：未通过",
+        "permission.status": "当前状态",
         "permission.bundleId": "Bundle ID",
         "permission.path": "当前 App 路径",
         "permission.openSettings": "打开系统设置",
@@ -161,6 +162,7 @@ enum L10n {
         "permission.title": "Capture Permission",
         "permission.trusted": "Accessibility trust check: passed",
         "permission.untrusted": "Accessibility trust check: failed",
+        "permission.status": "Current Status",
         "permission.bundleId": "Bundle ID",
         "permission.path": "Current app path",
         "permission.openSettings": "Open Settings",
@@ -981,12 +983,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(launchItem)
 
         menu.addItem(actionItem(L10n.text("menu.openTargetFolder"), #selector(openTargetFolder)))
-        menu.addItem(actionItem(L10n.text("menu.checkCapturePermission"), #selector(checkCapturePermission)))
-        menu.addItem(actionItem(L10n.text("menu.openAccessibilitySettings"), #selector(openAccessibilitySettings)))
+        let permissionItem = NSMenuItem(title: L10n.text("permission.title"), action: nil, keyEquivalent: "")
+        permissionItem.submenu = buildPermissionMenu()
+        menu.addItem(permissionItem)
         menu.addItem(NSMenuItem.separator())
         let quitItem = actionItem(L10n.text("menu.quit"), #selector(quit))
         quitItem.keyEquivalent = "q"
         menu.addItem(quitItem)
+        return menu
+    }
+
+    private func buildPermissionMenu() -> NSMenu {
+        let menu = NSMenu()
+        let status = AXIsProcessTrusted() ? L10n.text("permission.trusted") : L10n.text("permission.untrusted")
+        let statusItem = NSMenuItem(title: "\(L10n.text("permission.status")): \(status)", action: nil, keyEquivalent: "")
+        statusItem.isEnabled = false
+        menu.addItem(statusItem)
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(actionItem(L10n.text("menu.checkCapturePermission"), #selector(checkCapturePermission)))
+        menu.addItem(actionItem(L10n.text("menu.openAccessibilitySettings"), #selector(openAccessibilitySettings)))
         return menu
     }
 
