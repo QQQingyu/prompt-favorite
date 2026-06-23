@@ -104,6 +104,8 @@ enum L10n {
         "permission.trusted": "辅助功能校验：已通过",
         "permission.untrusted": "辅助功能校验：未通过",
         "permission.status": "当前状态",
+        "permission.menuEnabled": "已开启",
+        "permission.menuDisabled": "未开启",
         "permission.bundleId": "Bundle ID",
         "permission.path": "当前 App 路径",
         "permission.openSettings": "打开系统设置",
@@ -162,7 +164,9 @@ enum L10n {
         "permission.title": "Capture Permission",
         "permission.trusted": "Accessibility trust check: passed",
         "permission.untrusted": "Accessibility trust check: failed",
-        "permission.status": "Current Status",
+        "permission.status": "Status",
+        "permission.menuEnabled": "Enabled",
+        "permission.menuDisabled": "Disabled",
         "permission.bundleId": "Bundle ID",
         "permission.path": "Current app path",
         "permission.openSettings": "Open Settings",
@@ -995,7 +999,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func buildPermissionMenu() -> NSMenu {
         let menu = NSMenu()
-        let status = AXIsProcessTrusted() ? L10n.text("permission.trusted") : L10n.text("permission.untrusted")
+        let status = AXIsProcessTrusted() ? L10n.text("permission.menuEnabled") : L10n.text("permission.menuDisabled")
         let statusItem = NSMenuItem(title: "\(L10n.text("permission.status")): \(status)", action: nil, keyEquivalent: "")
         statusItem.isEnabled = false
         menu.addItem(statusItem)
