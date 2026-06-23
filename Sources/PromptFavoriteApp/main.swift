@@ -1,5 +1,6 @@
 import Cocoa
 import ApplicationServices
+import ServiceManagement
 
 enum Language {
     case zh
@@ -70,6 +71,7 @@ enum L10n {
         "menu.globalTrigger": "全局触发方式",
         "menu.captureBehavior": "收藏行为",
         "menu.language": "界面语言",
+        "menu.launchAtStartup": "开机时自动启动",
         "menu.checkCapturePermission": "检查捕获权限",
         "menu.openTargetFolder": "打开目标文件夹",
         "menu.openAccessibilitySettings": "打开辅助功能权限设置",
@@ -104,6 +106,9 @@ enum L10n {
         "permission.bundleId": "Bundle ID",
         "permission.path": "当前 App 路径",
         "permission.openSettings": "打开系统设置",
+        "launchAtStartup.requiresApproval": "已提交开机时自动启动请求。请在系统设置 > 通用 > 登录项中允许 Prompt Favorite。",
+        "launchAtStartup.unsupported": "当前 macOS 版本不支持通过此 App 设置开机时自动启动。",
+        "error.launchAtStartup": "更新开机时自动启动失败：%@",
         "status.saved": "已保存",
         "notice.savedTo": "已保存到 %@",
         "default.untitledPrompt": "未命名 prompt"
@@ -124,6 +129,7 @@ enum L10n {
         "menu.globalTrigger": "Global Trigger",
         "menu.captureBehavior": "Capture Behavior",
         "menu.language": "Language",
+        "menu.launchAtStartup": "Launch at Startup",
         "menu.checkCapturePermission": "Check Capture Permission",
         "menu.openTargetFolder": "Open Target Folder",
         "menu.openAccessibilitySettings": "Open Accessibility Settings",
@@ -158,6 +164,9 @@ enum L10n {
         "permission.bundleId": "Bundle ID",
         "permission.path": "Current app path",
         "permission.openSettings": "Open Settings",
+        "launchAtStartup.requiresApproval": "Launch at Startup was requested. Allow Prompt Favorite in System Settings > General > Login Items.",
+        "launchAtStartup.unsupported": "This macOS version does not support configuring Launch at Startup from this app.",
+        "error.launchAtStartup": "Failed to update Launch at Startup: %@",
         "status.saved": "Saved",
         "notice.savedTo": "Saved to %@",
         "default.untitledPrompt": "Untitled prompt"
@@ -967,6 +976,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         languageItem.submenu = languageMenu
         menu.addItem(languageItem)
 
+        let launchItem = actionItem(L10n.text("menu.launchAtStartup"), #selector(toggleLaunchAtStartup(_:)))
+        launchItem.state = isLaunchAtStartupEnabled() ? .on : .off
+        menu.addItem(launchItem)
+
         menu.addItem(actionItem(L10n.text("menu.openTargetFolder"), #selector(openTargetFolder)))
         menu.addItem(actionItem(L10n.text("menu.checkCapturePermission"), #selector(checkCapturePermission)))
         menu.addItem(actionItem(L10n.text("menu.openAccessibilitySettings"), #selector(openAccessibilitySettings)))
@@ -1321,6 +1334,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings.languageMode = mode
         L10n.configure(languageMode: mode)
         refreshMenu()
+    }
+
+    @objc private func toggleLaunchAtStartup(_ sender: NSMenuItem) {
+        guard #available(macOS 13.0, *) else {
+            showError(L10n.text("launchAtStartup.unsupported"))
+            return
+        }
+
+        let service = SMAppService.mainApp
+        let shouldEnable = service.status != .enabled
+        do {
+            if shouldEnable {
+                try service.register()
+                if service.status == .requiresApproval {
+                    showError(L10n.text("launchAtStartup.requiresApproval"))
+                }
+            } else {
+                try service.unregister()
+            }
+            refreshMenu()
+        } catch {
+            showError(String(format: L10n.text("error.launchAtStartup"), error.localizedDescription))
+        }
+    }
+
+    private func isLaunchAtStartupEnabled() -> Bool {
+        guard #available(macOS 13.0, *) else {
+            return false
+        }
+        return SMAppService.mainApp.status == .enabled
     }
 
     @objc private func openTargetFolder() {

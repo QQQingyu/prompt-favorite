@@ -16,6 +16,7 @@ swiftc \
   -O \
   -framework Cocoa \
   -framework ApplicationServices \
+  -framework ServiceManagement \
   "$ROOT/Sources/PromptFavoriteApp/main.swift" \
   -o "$MACOS_DIR/$APP_NAME"
 

@@ -106,6 +106,7 @@ You can point the target folder to any Obsidian vault folder, for example:
 - **Global Trigger**: choose Double Option, Command + Option + P, Command + Shift + P, or Off.
 - **Capture Behavior**: choose Review Before Save or Quick Save.
 - **Language**: choose Follow System, Chinese, or English.
+- **Launch at Startup**: start Prompt Favorite automatically when macOS starts.
 - **Open Target Folder**: open the current prompt collection folder.
 - **Check Capture Permission**: show whether the current installed app passes the macOS Accessibility trust check.
 - **Open Accessibility Settings**: jump to macOS permission settings.

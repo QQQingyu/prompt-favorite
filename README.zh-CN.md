@@ -106,6 +106,7 @@ Prompt Favorite 需要 macOS 辅助功能权限，因为全局捕获会向当前
 - **全局触发方式**：选择连按两次 Option、Command + Option + P、Command + Shift + P 或关闭。
 - **收藏行为**：选择保存前确认或快速保存。
 - **界面语言**：选择跟随系统、中文或 English。
+- **开机时自动启动**：macOS 启动后自动打开 Prompt Favorite。
 - **打开目标文件夹**：打开当前 prompt 收藏目录。
 - **检查捕获权限**：显示当前安装的 App 是否通过 macOS 辅助功能校验。
 - **打开辅助功能权限设置**：跳转到 macOS 权限设置。
