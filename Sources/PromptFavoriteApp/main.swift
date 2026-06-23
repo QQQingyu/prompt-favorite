@@ -67,6 +67,9 @@ enum L10n {
         "menu.target": "目标",
         "menu.chooseTargetFolder": "选择目标文件夹...",
         "menu.collection": "文件",
+        "menu.saveDestination": "保存位置",
+        "menu.captureSettings": "捕获设置",
+        "menu.appSettings": "应用设置",
         "menu.saveFormatSettings": "保存格式设置...",
         "menu.globalTrigger": "全局触发方式",
         "menu.captureBehavior": "收藏行为",
@@ -132,6 +135,9 @@ enum L10n {
         "menu.target": "Target",
         "menu.chooseTargetFolder": "Choose Target Folder...",
         "menu.collection": "Collection",
+        "menu.saveDestination": "Save Destination",
+        "menu.captureSettings": "Capture Settings",
+        "menu.appSettings": "App Settings",
         "menu.saveFormatSettings": "Save Format Settings...",
         "menu.globalTrigger": "Global Trigger",
         "menu.captureBehavior": "Capture Behavior",
@@ -1020,17 +1026,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(actionItem(L10n.text("menu.captureSelectedText"), #selector(captureSelectedTextFromMenu)))
         menu.addItem(NSMenuItem.separator())
 
+        let destinationItem = NSMenuItem(title: L10n.text("menu.saveDestination"), action: nil, keyEquivalent: "")
+        destinationItem.submenu = buildDestinationMenu()
+        menu.addItem(destinationItem)
+
+        let captureSettingsItem = NSMenuItem(title: L10n.text("menu.captureSettings"), action: nil, keyEquivalent: "")
+        captureSettingsItem.submenu = buildCaptureSettingsMenu()
+        menu.addItem(captureSettingsItem)
+
+        let appSettingsItem = NSMenuItem(title: L10n.text("menu.appSettings"), action: nil, keyEquivalent: "")
+        appSettingsItem.submenu = buildAppSettingsMenu()
+        menu.addItem(appSettingsItem)
+
+        menu.addItem(NSMenuItem.separator())
+        let quitItem = actionItem(L10n.text("menu.quit"), #selector(quit))
+        quitItem.keyEquivalent = "q"
+        menu.addItem(quitItem)
+        return menu
+    }
+
+    private func buildDestinationMenu() -> NSMenu {
+        let menu = NSMenu()
         let folderItem = NSMenuItem(title: "\(L10n.text("menu.target")): \(shortPath(settings.targetFolder))", action: nil, keyEquivalent: "")
         folderItem.isEnabled = false
         menu.addItem(folderItem)
+        menu.addItem(actionItem(L10n.text("menu.openTargetFolder"), #selector(openTargetFolder)))
         menu.addItem(actionItem(L10n.text("menu.chooseTargetFolder"), #selector(chooseTargetFolder)))
+        menu.addItem(NSMenuItem.separator())
 
         let fileItem = NSMenuItem(title: "\(L10n.text("menu.collection")): \(settings.collectionFile)", action: nil, keyEquivalent: "")
         fileItem.isEnabled = false
         menu.addItem(fileItem)
         menu.addItem(actionItem(L10n.text("menu.saveFormatSettings"), #selector(showFormatSettings)))
-        menu.addItem(NSMenuItem.separator())
+        return menu
+    }
 
+    private func buildCaptureSettingsMenu() -> NSMenu {
+        let menu = NSMenu()
         let triggerMenu = NSMenu()
         for mode in TriggerMode.allCases {
             let item = NSMenuItem(title: mode.title, action: #selector(setTriggerMode(_:)), keyEquivalent: "")
@@ -1055,6 +1087,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         behaviorItem.submenu = behaviorMenu
         menu.addItem(behaviorItem)
 
+        let permissionItem = NSMenuItem(title: L10n.text("permission.title"), action: nil, keyEquivalent: "")
+        permissionItem.submenu = buildPermissionMenu()
+        menu.addItem(permissionItem)
+        return menu
+    }
+
+    private func buildAppSettingsMenu() -> NSMenu {
+        let menu = NSMenu()
         let languageMenu = NSMenu()
         for mode in LanguageMode.allCases {
             let item = NSMenuItem(title: mode.title, action: #selector(setLanguageMode(_:)), keyEquivalent: "")
@@ -1070,15 +1110,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let launchItem = actionItem(L10n.text("menu.launchAtStartup"), #selector(toggleLaunchAtStartup(_:)))
         launchItem.state = isLaunchAtStartupEnabled() ? .on : .off
         menu.addItem(launchItem)
-
-        menu.addItem(actionItem(L10n.text("menu.openTargetFolder"), #selector(openTargetFolder)))
-        let permissionItem = NSMenuItem(title: L10n.text("permission.title"), action: nil, keyEquivalent: "")
-        permissionItem.submenu = buildPermissionMenu()
-        menu.addItem(permissionItem)
-        menu.addItem(NSMenuItem.separator())
-        let quitItem = actionItem(L10n.text("menu.quit"), #selector(quit))
-        quitItem.keyEquivalent = "q"
-        menu.addItem(quitItem)
         return menu
     }
 
