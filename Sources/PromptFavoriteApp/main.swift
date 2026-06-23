@@ -70,6 +70,7 @@ enum L10n {
         "menu.globalTrigger": "全局触发方式",
         "menu.captureBehavior": "收藏行为",
         "menu.language": "界面语言",
+        "menu.checkCapturePermission": "检查捕获权限",
         "menu.openTargetFolder": "打开目标文件夹",
         "menu.openAccessibilitySettings": "打开辅助功能权限设置",
         "menu.quit": "退出 Prompt Favorite",
@@ -94,9 +95,15 @@ enum L10n {
         "field.codeFenceLanguage": "代码块语言",
         "field.preview": "标题预览",
         "preview.sampleTitle": "PRD Review",
-        "error.accessibilityDenied": "请给 Prompt Favorite 开启辅助功能权限。需要授权的是 Prompt Favorite，不是复制的目标 App。若已经开启，请退出 Prompt Favorite，在系统设置中删除后重新添加当前安装位置的 Prompt Favorite，再重新打开。",
+        "error.accessibilityDenied": "Prompt Favorite 当前没有通过 macOS 辅助功能校验。需要授权的是 Prompt Favorite，不是复制的目标 App。若已经授权，通常是 App 在授权后被重新构建或覆盖，导致 macOS 权限记录失效。请删除系统设置里的旧 Prompt Favorite，重新添加当前安装位置，然后重启 App。",
         "error.noSelectedText": "没有复制到选中文本。请先选中文本；如果权限刚开启过，请退出并重新打开 Prompt Favorite。",
         "error.title": "Prompt Favorite",
+        "permission.title": "捕获权限",
+        "permission.trusted": "辅助功能校验：已通过",
+        "permission.untrusted": "辅助功能校验：未通过",
+        "permission.bundleId": "Bundle ID",
+        "permission.path": "当前 App 路径",
+        "permission.openSettings": "打开系统设置",
         "status.saved": "已保存",
         "notice.savedTo": "已保存到 %@",
         "default.untitledPrompt": "未命名 prompt"
@@ -117,6 +124,7 @@ enum L10n {
         "menu.globalTrigger": "Global Trigger",
         "menu.captureBehavior": "Capture Behavior",
         "menu.language": "Language",
+        "menu.checkCapturePermission": "Check Capture Permission",
         "menu.openTargetFolder": "Open Target Folder",
         "menu.openAccessibilitySettings": "Open Accessibility Settings",
         "menu.quit": "Quit Prompt Favorite",
@@ -141,9 +149,15 @@ enum L10n {
         "field.codeFenceLanguage": "Code fence language",
         "field.preview": "Heading preview",
         "preview.sampleTitle": "PRD Review",
-        "error.accessibilityDenied": "Enable Accessibility permission for Prompt Favorite. The app that needs permission is Prompt Favorite, not the source app. If it is already enabled, quit Prompt Favorite, remove it in System Settings, add Prompt Favorite from the current install location, then reopen it.",
+        "error.accessibilityDenied": "Prompt Favorite is not passing the macOS Accessibility trust check. The app that needs permission is Prompt Favorite, not the source app. If it is already enabled, the app was likely rebuilt or replaced after permission was granted, so the macOS permission record is stale. Remove the old Prompt Favorite entry in System Settings, add the current installed app again, then reopen it.",
         "error.noSelectedText": "No selected text was copied. Select text first; if permission was just enabled, quit and reopen Prompt Favorite.",
         "error.title": "Prompt Favorite",
+        "permission.title": "Capture Permission",
+        "permission.trusted": "Accessibility trust check: passed",
+        "permission.untrusted": "Accessibility trust check: failed",
+        "permission.bundleId": "Bundle ID",
+        "permission.path": "Current app path",
+        "permission.openSettings": "Open Settings",
         "status.saved": "Saved",
         "notice.savedTo": "Saved to %@",
         "default.untitledPrompt": "Untitled prompt"
@@ -431,6 +445,19 @@ func formattedPreviewDate(_ date: Date, format: String) -> String {
         : format
     formatter.locale = Locale(identifier: "en_US_POSIX")
     return formatter.string(from: date)
+}
+
+func capturePermissionDiagnosticText() -> String {
+    let trusted = AXIsProcessTrusted()
+    let status = trusted ? L10n.text("permission.trusted") : L10n.text("permission.untrusted")
+    let bundleID = Bundle.main.bundleIdentifier ?? "unknown"
+    let bundlePath = Bundle.main.bundleURL.path
+    return """
+    \(status)
+
+    \(L10n.text("permission.bundleId")): \(bundleID)
+    \(L10n.text("permission.path")): \(bundlePath)
+    """
 }
 
 final class SavePromptWindowController: NSWindowController {
@@ -941,6 +968,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(languageItem)
 
         menu.addItem(actionItem(L10n.text("menu.openTargetFolder"), #selector(openTargetFolder)))
+        menu.addItem(actionItem(L10n.text("menu.checkCapturePermission"), #selector(checkCapturePermission)))
         menu.addItem(actionItem(L10n.text("menu.openAccessibilitySettings"), #selector(openAccessibilitySettings)))
         menu.addItem(NSMenuItem.separator())
         let quitItem = actionItem(L10n.text("menu.quit"), #selector(quit))
@@ -1133,6 +1161,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func copyCurrentSelection() throws -> String {
+        guard AXIsProcessTrusted() else {
+            throw NSError(
+                domain: "PromptFavorite",
+                code: 2,
+                userInfo: [NSLocalizedDescriptionKey: accessibilityDeniedDiagnostic()]
+            )
+        }
+
         let snapshot = PasteboardSnapshot.capture()
         let pasteboard = NSPasteboard.general
         let sentinel = "PROMPT_FAVORITE_SENTINEL_\(UUID().uuidString)"
@@ -1160,8 +1196,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let message = AXIsProcessTrusted()
             ? L10n.text("error.noSelectedText")
-            : L10n.text("error.accessibilityDenied")
+            : accessibilityDeniedDiagnostic()
         throw NSError(domain: "PromptFavorite", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
+    }
+
+    private func accessibilityDeniedDiagnostic() -> String {
+        "\(L10n.text("error.accessibilityDenied"))\n\n\(capturePermissionDiagnosticText())"
     }
 
     private func postCommandC() {
@@ -1288,6 +1328,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSWorkspace.shared.open(url)
     }
 
+    @objc private func checkCapturePermission() {
+        showCapturePermissionStatus()
+    }
+
     @objc private func openAccessibilitySettings() {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
             NSWorkspace.shared.open(url)
@@ -1304,6 +1348,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         alert.messageText = L10n.text("error.title")
         alert.informativeText = message
         alert.runModal()
+    }
+
+    private func showCapturePermissionStatus() {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = L10n.text("permission.title")
+        alert.informativeText = capturePermissionDiagnostic()
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: L10n.text("permission.openSettings"))
+        let response = alert.runModal()
+        if response == .alertSecondButtonReturn {
+            openAccessibilitySettings()
+        }
+    }
+
+    private func capturePermissionDiagnostic() -> String {
+        capturePermissionDiagnosticText()
     }
 
     private func notify(_ message: String) {
@@ -1368,7 +1429,15 @@ func runSelfTestIfRequested() -> Bool {
     return true
 }
 
-if !runSelfTestIfRequested() {
+func runAccessibilityCheckIfRequested() -> Bool {
+    guard CommandLine.arguments.contains("--check-accessibility") else {
+        return false
+    }
+    print(capturePermissionDiagnosticText())
+    return true
+}
+
+if !runSelfTestIfRequested() && !runAccessibilityCheckIfRequested() {
     let app = NSApplication.shared
     let delegate = AppDelegate()
     app.delegate = delegate

@@ -37,6 +37,7 @@ Clone and install the app locally:
 ```bash
 git clone https://github.com/QQQingyu/prompt-favorite.git
 cd prompt-favorite
+./scripts/setup_local_codesign.sh
 ./scripts/install_app.sh
 open "$HOME/Applications/Prompt Favorite.app"
 ```
@@ -59,15 +60,18 @@ Prompt Favorite needs macOS Accessibility permission because global capture work
 
 1. Start the app.
 2. Click the menu bar icon.
-3. Open **Accessibility Settings**.
-4. Enable **Prompt Favorite**.
-5. Quit and reopen Prompt Favorite.
+3. Run **Check Capture Permission** to see the current app path and trust status.
+4. Open **Accessibility Settings**.
+5. Enable **Prompt Favorite**.
+6. Quit and reopen Prompt Favorite.
 
 If the permission is enabled but capture still fails, remove Prompt Favorite from **System Settings -> Privacy & Security -> Accessibility**, add the current installed app again, then reopen it:
 
 ```text
 ~/Applications/Prompt Favorite.app
 ```
+
+For local development, run `./scripts/setup_local_codesign.sh` once before repeated rebuilds. Without a stable local signing identity, macOS may keep a stale Accessibility record after the app is rebuilt or replaced.
 
 ## Usage
 
@@ -103,6 +107,7 @@ You can point the target folder to any Obsidian vault folder, for example:
 - **Capture Behavior**: choose Review Before Save or Quick Save.
 - **Language**: choose Follow System, Chinese, or English.
 - **Open Target Folder**: open the current prompt collection folder.
+- **Check Capture Permission**: show whether the current installed app passes the macOS Accessibility trust check.
 - **Open Accessibility Settings**: jump to macOS permission settings.
 
 ## Markdown Format
@@ -147,10 +152,22 @@ Build the app:
 ./scripts/build_app.sh
 ```
 
+Create a stable local code-signing identity for development builds:
+
+```bash
+./scripts/setup_local_codesign.sh
+```
+
 Run the Markdown write self-test:
 
 ```bash
 "dist/Prompt Favorite.app/Contents/MacOS/Prompt Favorite" --self-test "$PWD/tmp-self-test"
+```
+
+Check the current app's Accessibility trust status:
+
+```bash
+"$HOME/Applications/Prompt Favorite.app/Contents/MacOS/Prompt Favorite" --check-accessibility
 ```
 
 Install the current build:

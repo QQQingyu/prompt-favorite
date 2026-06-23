@@ -51,7 +51,20 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
 PLIST
 
 if [ "${PROMPT_FAVORITE_SKIP_CODESIGN:-0}" != "1" ]; then
-  codesign --force --deep --sign "${PROMPT_FAVORITE_CODESIGN_IDENTITY:--}" "$APP_DIR" >/dev/null
+  SIGN_IDENTITY="${PROMPT_FAVORITE_CODESIGN_IDENTITY:-}"
+  if [ -z "$SIGN_IDENTITY" ]; then
+    DEFAULT_IDENTITY="Prompt Favorite Local Codesign"
+    if security find-identity -v -p codesigning | awk -v name="$DEFAULT_IDENTITY" 'index($0, "\"" name "\"") { found = 1 } END { exit found ? 0 : 1 }'; then
+      SIGN_IDENTITY="$DEFAULT_IDENTITY"
+    else
+      SIGN_IDENTITY="-"
+      {
+        echo "warning: using ad-hoc signing because no stable code-signing identity was found."
+        echo "warning: run scripts/setup_local_codesign.sh to avoid stale macOS Accessibility permissions after rebuilds."
+      } >&2
+    fi
+  fi
+  codesign --force --deep --sign "$SIGN_IDENTITY" "$APP_DIR" >/dev/null
 fi
 
 echo "$APP_DIR"

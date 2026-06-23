@@ -1,4 +1,5 @@
 .DS_Store
+.npm-cache/
 build/
 dist/
 tmp-self-test/
