@@ -90,13 +90,17 @@ enum L10n {
         "field.prompt": "Prompt",
         "alert.format.title": "保存格式设置",
         "alert.format.message": "这些默认值会用于全局收藏流程。",
-        "field.defaultCollectionFile": "默认 Collection 文件",
+        "field.defaultCollectionFile": "默认文件",
         "field.entryTitleTemplate": "条目标题模板",
         "field.timestampFormat": "时间格式",
         "field.entrySeparator": "条目分割线",
         "field.codeFenceLanguage": "代码块语言",
         "field.preview": "标题预览",
+        "section.saveTarget": "收藏文件",
+        "section.entryFormat": "Markdown 条目",
+        "section.preview": "Markdown 预览",
         "preview.sampleTitle": "PRD Review",
+        "preview.samplePrompt": "请审阅这份 PRD，只指出阻塞性的逻辑问题。",
         "error.accessibilityDenied": "Prompt Favorite 当前没有通过 macOS 辅助功能校验。需要授权的是 Prompt Favorite，不是复制的目标 App。若已经授权，通常是 App 在授权后被重新构建或覆盖，导致 macOS 权限记录失效。请删除系统设置里的旧 Prompt Favorite，重新添加当前安装位置，然后重启 App。",
         "error.noSelectedText": "没有复制到选中文本。请先选中文本；如果权限刚开启过，请退出并重新打开 Prompt Favorite。",
         "error.title": "Prompt Favorite",
@@ -151,13 +155,17 @@ enum L10n {
         "field.prompt": "Prompt",
         "alert.format.title": "Save Format Settings",
         "alert.format.message": "These defaults are used by the global capture flow.",
-        "field.defaultCollectionFile": "Default collection file",
+        "field.defaultCollectionFile": "Default file",
         "field.entryTitleTemplate": "Entry title template",
         "field.timestampFormat": "Timestamp format",
         "field.entrySeparator": "Entry separator",
         "field.codeFenceLanguage": "Code fence language",
         "field.preview": "Heading preview",
+        "section.saveTarget": "Collection File",
+        "section.entryFormat": "Markdown Entry",
+        "section.preview": "Markdown Preview",
         "preview.sampleTitle": "PRD Review",
+        "preview.samplePrompt": "Review this PRD and only point out blocking logic issues.",
         "error.accessibilityDenied": "Prompt Favorite is not passing the macOS Accessibility trust check. The app that needs permission is Prompt Favorite, not the source app. If it is already enabled, the app was likely rebuilt or replaced after permission was granted, so the macOS permission record is stale. Remove the old Prompt Favorite entry in System Settings, add the current installed app again, then reopen it.",
         "error.noSelectedText": "No selected text was copied. Select text first; if permission was just enabled, quit and reopen Prompt Favorite.",
         "error.title": "Prompt Favorite",
@@ -711,7 +719,7 @@ final class FormatSettingsWindowController: NSWindowController {
     private let timestampField: NSTextField
     private let separatorField: NSTextField
     private let languageField: NSTextField
-    private let previewLabel: NSTextField
+    private let previewTextView: NSTextView
     private let onSave: (String, String, String, String, String) -> Void
     private let onCancel: () -> Void
     private var didComplete = false
@@ -722,12 +730,12 @@ final class FormatSettingsWindowController: NSWindowController {
         self.timestampField = NSTextField(string: settings.timestampFormat)
         self.separatorField = NSTextField(string: settings.entrySeparator)
         self.languageField = NSTextField(string: settings.codeFenceLanguage)
-        self.previewLabel = NSTextField(labelWithString: "")
+        self.previewTextView = NSTextView(frame: .zero)
         self.onSave = onSave
         self.onCancel = onCancel
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 620, height: 470),
+            contentRect: NSRect(x: 0, y: 0, width: 680, height: 560),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -751,9 +759,9 @@ final class FormatSettingsWindowController: NSWindowController {
 
         let root = NSStackView()
         root.orientation = .vertical
-        root.alignment = .leading
-        root.spacing = 14
-        root.edgeInsets = NSEdgeInsets(top: 24, left: 28, bottom: 22, right: 28)
+        root.alignment = .width
+        root.spacing = 18
+        root.edgeInsets = NSEdgeInsets(top: 28, left: 32, bottom: 24, right: 32)
         root.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(root)
 
@@ -765,7 +773,7 @@ final class FormatSettingsWindowController: NSWindowController {
         ])
 
         let title = NSTextField(labelWithString: L10n.text("alert.format.title"))
-        title.font = NSFont.boldSystemFont(ofSize: 22)
+        title.font = NSFont.boldSystemFont(ofSize: 21)
         let subtitle = NSTextField(labelWithString: L10n.text("alert.format.message"))
         subtitle.font = NSFont.systemFont(ofSize: 13)
         subtitle.textColor = .secondaryLabelColor
@@ -773,11 +781,26 @@ final class FormatSettingsWindowController: NSWindowController {
 
         root.addArrangedSubview(title)
         root.addArrangedSubview(subtitle)
-        root.addArrangedSubview(formRow(label: L10n.text("field.defaultCollectionFile"), field: collectionField))
-        root.addArrangedSubview(formRow(label: L10n.text("field.entryTitleTemplate"), field: templateField))
-        root.addArrangedSubview(formRow(label: L10n.text("field.timestampFormat"), field: timestampField))
-        root.addArrangedSubview(formRow(label: L10n.text("field.entrySeparator"), field: separatorField))
-        root.addArrangedSubview(formRow(label: L10n.text("field.codeFenceLanguage"), field: languageField))
+
+        root.addArrangedSubview(
+            section(
+                title: L10n.text("section.saveTarget"),
+                rows: [
+                    formRow(label: L10n.text("field.defaultCollectionFile"), field: collectionField)
+                ]
+            )
+        )
+        root.addArrangedSubview(
+            section(
+                title: L10n.text("section.entryFormat"),
+                rows: [
+                    formRow(label: L10n.text("field.entryTitleTemplate"), field: templateField),
+                    formRow(label: L10n.text("field.timestampFormat"), field: timestampField),
+                    formRow(label: L10n.text("field.entrySeparator"), field: separatorField),
+                    formRow(label: L10n.text("field.codeFenceLanguage"), field: languageField)
+                ]
+            )
+        )
         root.addArrangedSubview(previewSection())
         root.addArrangedSubview(buttonRow())
 
@@ -785,19 +808,45 @@ final class FormatSettingsWindowController: NSWindowController {
             field.font = NSFont.systemFont(ofSize: 14)
             field.delegate = self
         }
+        collectionField.placeholderString = "Favorites.md"
+        templateField.placeholderString = "{{time}} - {{title}}"
+        timestampField.placeholderString = "yyyy-MM-dd HH:mm:ss"
+        separatorField.placeholderString = "---"
+        languageField.placeholderString = "prompt"
+    }
+
+    private func section(title: String, rows: [NSView]) -> NSView {
+        let stack = NSStackView()
+        stack.orientation = .vertical
+        stack.alignment = .width
+        stack.spacing = 10
+
+        let titleView = NSTextField(labelWithString: title)
+        titleView.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
+        titleView.textColor = .labelColor
+
+        stack.addArrangedSubview(titleView)
+        for row in rows {
+            stack.addArrangedSubview(row)
+        }
+        return stack
     }
 
     private func formRow(label: String, field: NSTextField) -> NSView {
         let stack = NSStackView()
-        stack.orientation = .vertical
-        stack.alignment = .leading
-        stack.spacing = 6
+        stack.orientation = .horizontal
+        stack.alignment = .firstBaseline
+        stack.spacing = 14
+
+        let label = labelView(label)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.widthAnchor.constraint(equalToConstant: 164).isActive = true
 
         field.translatesAutoresizingMaskIntoConstraints = false
-        field.widthAnchor.constraint(equalToConstant: 564).isActive = true
+        field.widthAnchor.constraint(equalToConstant: 438).isActive = true
         field.heightAnchor.constraint(equalToConstant: 28).isActive = true
 
-        stack.addArrangedSubview(labelView(label))
+        stack.addArrangedSubview(label)
         stack.addArrangedSubview(field)
         return stack
     }
@@ -805,17 +854,38 @@ final class FormatSettingsWindowController: NSWindowController {
     private func previewSection() -> NSView {
         let stack = NSStackView()
         stack.orientation = .vertical
-        stack.alignment = .leading
-        stack.spacing = 6
+        stack.alignment = .width
+        stack.spacing = 10
 
-        previewLabel.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
-        previewLabel.textColor = .labelColor
-        previewLabel.lineBreakMode = .byTruncatingMiddle
-        previewLabel.translatesAutoresizingMaskIntoConstraints = false
-        previewLabel.widthAnchor.constraint(equalToConstant: 564).isActive = true
+        previewTextView.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        previewTextView.textColor = .labelColor
+        previewTextView.backgroundColor = .textBackgroundColor
+        previewTextView.drawsBackground = true
+        previewTextView.isEditable = false
+        previewTextView.isSelectable = true
+        previewTextView.textContainerInset = NSSize(width: 8, height: 8)
+        previewTextView.textContainer?.lineFragmentPadding = 0
+        previewTextView.textContainer?.widthTracksTextView = true
+        previewTextView.isHorizontallyResizable = false
+        previewTextView.isVerticallyResizable = true
 
-        stack.addArrangedSubview(labelView(L10n.text("field.preview")))
-        stack.addArrangedSubview(previewLabel)
+        let scrollView = NSScrollView()
+        scrollView.borderType = .bezelBorder
+        scrollView.drawsBackground = true
+        scrollView.hasVerticalScroller = false
+        scrollView.hasHorizontalScroller = false
+        scrollView.documentView = previewTextView
+        previewTextView.autoresizingMask = [.width, .height]
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.widthAnchor.constraint(equalToConstant: 616).isActive = true
+        scrollView.heightAnchor.constraint(equalToConstant: 118).isActive = true
+
+        let titleView = NSTextField(labelWithString: L10n.text("section.preview"))
+        titleView.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
+        titleView.textColor = .labelColor
+
+        stack.addArrangedSubview(titleView)
+        stack.addArrangedSubview(scrollView)
         return stack
     }
 
@@ -827,7 +897,8 @@ final class FormatSettingsWindowController: NSWindowController {
 
         let spacer = NSView()
         spacer.translatesAutoresizingMaskIntoConstraints = false
-        spacer.widthAnchor.constraint(equalToConstant: 320).isActive = true
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         let cancel = NSButton(title: L10n.text("button.cancel"), target: self, action: #selector(cancel))
         cancel.bezelStyle = .rounded
@@ -850,17 +921,31 @@ final class FormatSettingsWindowController: NSWindowController {
         let view = NSTextField(labelWithString: text)
         view.font = NSFont.systemFont(ofSize: 12, weight: .medium)
         view.textColor = .secondaryLabelColor
+        view.alignment = .right
         return view
     }
 
     private func updatePreview() {
         let timestamp = formattedPreviewDate(Date(), format: timestampField.stringValue)
         let sampleTitle = L10n.text("preview.sampleTitle")
-        previewLabel.stringValue = "## " + renderEntryHeading(
+        let separator = separatorField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? "---"
+            : separatorField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let language = languageField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let heading = renderEntryHeading(
             template: templateField.stringValue,
             timestamp: timestamp,
             title: sampleTitle
         )
+        previewTextView.string = """
+        \(separator)
+
+        ## \(heading)
+
+        ```\(language)
+        \(L10n.text("preview.samplePrompt"))
+        ```
+        """
     }
 
     func controlTextDidChange(_ obj: Notification) {
