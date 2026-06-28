@@ -178,6 +178,8 @@ Install the current build:
 
 The app is built with `swiftc`, Cocoa, and ApplicationServices. No package manager is required.
 
+For Mac App Store packaging notes, see [docs/AppStoreRelease.md](./docs/AppStoreRelease.md).
+
 ## Current Limits
 
 - Global capture depends on macOS Accessibility permission.

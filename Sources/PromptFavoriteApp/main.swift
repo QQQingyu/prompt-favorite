@@ -229,6 +229,7 @@ enum CaptureBehavior: String, CaseIterable {
 
 struct AppSettings {
     private let defaults = UserDefaults.standard
+    private let targetFolderBookmarkKey = "targetFolderBookmark"
 
     var targetFolder: String {
         get {
@@ -286,6 +287,55 @@ struct AppSettings {
         get { defaults.string(forKey: "codeFenceLanguage") ?? "prompt" }
         set { defaults.set(newValue, forKey: "codeFenceLanguage") }
     }
+
+    func saveTargetFolder(_ url: URL, bookmarkData: Data? = nil) {
+        defaults.set(url.path, forKey: "targetFolder")
+        if let bookmarkData {
+            defaults.set(bookmarkData, forKey: targetFolderBookmarkKey)
+        } else {
+            defaults.removeObject(forKey: targetFolderBookmarkKey)
+        }
+    }
+
+    func withTargetFolderAccess<T>(for folderPath: String, _ body: (URL) throws -> T) throws -> T {
+        let fallbackURL = URL(fileURLWithPath: cleanFolderPath(folderPath), isDirectory: true)
+        guard
+            pathsMatch(fallbackURL.path, targetFolder),
+            let bookmarkData = defaults.data(forKey: targetFolderBookmarkKey)
+        else {
+            return try body(fallbackURL)
+        }
+
+        var isStale = false
+        let resolvedURL = try URL(
+            resolvingBookmarkData: bookmarkData,
+            options: [.withSecurityScope],
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        )
+        if isStale, let refreshed = securityScopedBookmarkData(for: resolvedURL) {
+            defaults.set(refreshed, forKey: targetFolderBookmarkKey)
+        }
+
+        let didStartAccess = resolvedURL.startAccessingSecurityScopedResource()
+        defer {
+            if didStartAccess {
+                resolvedURL.stopAccessingSecurityScopedResource()
+            }
+        }
+        return try body(resolvedURL)
+    }
+
+    private func cleanFolderPath(_ value: String) -> String {
+        let expanded = NSString(string: value.trimmingCharacters(in: .whitespacesAndNewlines)).expandingTildeInPath
+        return expanded.isEmpty
+            ? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Documents/Prompt Favorite").path
+            : expanded
+    }
+
+    private func pathsMatch(_ lhs: String, _ rhs: String) -> Bool {
+        URL(fileURLWithPath: lhs).standardizedFileURL.path == URL(fileURLWithPath: cleanFolderPath(rhs)).standardizedFileURL.path
+    }
 }
 
 struct PromptDraft {
@@ -293,6 +343,11 @@ struct PromptDraft {
     var title: String
     var targetFolder: String
     var collectionFile: String
+    var targetFolderBookmarkData: Data? = nil
+}
+
+func securityScopedBookmarkData(for url: URL) -> Data? {
+    try? url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil)
 }
 
 struct PasteboardSnapshot {
@@ -330,23 +385,24 @@ final class PromptStore {
     static func append(_ draft: PromptDraft, settings: AppSettings) throws -> URL {
         let folder = cleanFolderPath(draft.targetFolder)
         let fileName = cleanCollectionFileName(draft.collectionFile)
-        let folderURL = URL(fileURLWithPath: folder, isDirectory: true)
-        let fileURL = folderURL.appendingPathComponent(fileName)
         let now = Date()
 
-        try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
+        return try settings.withTargetFolderAccess(for: folder) { folderURL in
+            let fileURL = folderURL.appendingPathComponent(fileName)
+            try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
 
-        let entry = renderEntry(draft: draft, settings: settings, date: now)
-        if FileManager.default.fileExists(atPath: fileURL.path) {
-            let current = try String(contentsOf: fileURL, encoding: .utf8)
-            let updated = updateHeaderTimestamp(current, date: now)
-            try (updated + entry).write(to: fileURL, atomically: true, encoding: .utf8)
-        } else {
-            let header = renderHeader(folder: folder, fileName: fileName, date: now)
-            try (header + entry).write(to: fileURL, atomically: true, encoding: .utf8)
+            let entry = renderEntry(draft: draft, settings: settings, date: now)
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                let current = try String(contentsOf: fileURL, encoding: .utf8)
+                let updated = updateHeaderTimestamp(current, date: now)
+                try (updated + entry).write(to: fileURL, atomically: true, encoding: .utf8)
+            } else {
+                let header = renderHeader(folder: folderURL.path, fileName: fileName, date: now)
+                try (header + entry).write(to: fileURL, atomically: true, encoding: .utf8)
+            }
+
+            return fileURL
         }
-
-        return fileURL
     }
 
     private static func cleanFolderPath(_ value: String) -> String {
@@ -497,6 +553,7 @@ final class SavePromptWindowController: NSWindowController {
     private let onSave: (PromptDraft) -> Void
     private let onCancel: () -> Void
     private var didComplete = false
+    private var targetFolderBookmarkData: Data?
 
     init(draft: PromptDraft, onSave: @escaping (PromptDraft) -> Void, onCancel: @escaping () -> Void) {
         self.titleField = NSTextField(string: draft.title)
@@ -506,6 +563,7 @@ final class SavePromptWindowController: NSWindowController {
         self.textView.string = draft.text
         self.onSave = onSave
         self.onCancel = onCancel
+        self.targetFolderBookmarkData = draft.targetFolderBookmarkData
 
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 720, height: 620),
@@ -688,6 +746,7 @@ final class SavePromptWindowController: NSWindowController {
 
         if panel.runModal() == .OK, let url = panel.url {
             folderField.stringValue = url.path
+            targetFolderBookmarkData = securityScopedBookmarkData(for: url)
         }
     }
 
@@ -698,7 +757,8 @@ final class SavePromptWindowController: NSWindowController {
                 text: textView.string,
                 title: titleField.stringValue,
                 targetFolder: folderField.stringValue,
-                collectionFile: fileField.stringValue
+                collectionFile: fileField.stringValue,
+                targetFolderBookmarkData: targetFolderBookmarkData
             )
         )
         close()
@@ -1388,15 +1448,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func saveDraft(_ draft: PromptDraft) {
-            settings.targetFolder = draft.targetFolder
-            settings.collectionFile = draft.collectionFile
-            do {
-                let url = try PromptStore.append(draft, settings: settings)
-                refreshMenu()
-                notify(String(format: L10n.text("notice.savedTo"), url.lastPathComponent))
-            } catch {
-                showError(error.localizedDescription)
-            }
+        settings.saveTargetFolder(
+            URL(fileURLWithPath: NSString(string: draft.targetFolder).expandingTildeInPath, isDirectory: true),
+            bookmarkData: draft.targetFolderBookmarkData
+        )
+        settings.collectionFile = draft.collectionFile
+        do {
+            let url = try PromptStore.append(draft, settings: settings)
+            refreshMenu()
+            notify(String(format: L10n.text("notice.savedTo"), url.lastPathComponent))
+        } catch {
+            showError(error.localizedDescription)
+        }
     }
 
     @objc private func chooseTargetFolder() {
@@ -1408,7 +1471,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.directoryURL = URL(fileURLWithPath: NSString(string: settings.targetFolder).expandingTildeInPath)
 
         if panel.runModal() == .OK, let url = panel.url {
-            settings.targetFolder = url.path
+            settings.saveTargetFolder(url, bookmarkData: securityScopedBookmarkData(for: url))
             refreshMenu()
         }
     }

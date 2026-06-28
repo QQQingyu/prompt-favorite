@@ -178,6 +178,8 @@ Review this PRD and only point out blocking logic issues.
 
 项目直接使用 `swiftc`、Cocoa 和 ApplicationServices 构建，不需要额外包管理器。
 
+Mac App Store 打包说明见 [docs/AppStoreRelease.md](./docs/AppStoreRelease.md)。
+
 ## 当前边界
 
 - 全局捕获依赖 macOS 辅助功能权限。
