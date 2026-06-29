@@ -24,69 +24,75 @@ func drawIcon(pixelSize: Int) -> NSImage {
     image.lockFocus()
 
     let bounds = NSRect(x: 0, y: 0, width: size, height: size)
-    NSColor(calibratedRed: 0.89, green: 0.95, blue: 0.97, alpha: 1).setFill()
-    bounds.fill()
+    NSGraphicsContext.current?.cgContext.clear(bounds)
 
-    if let gradient = NSGradient(colors: [
-        NSColor(calibratedRed: 0.76, green: 0.90, blue: 0.95, alpha: 1),
-        NSColor(calibratedRed: 0.95, green: 0.98, blue: 0.99, alpha: 1)
-    ]) {
-        gradient.draw(in: bounds, angle: 90)
-    }
-
-    let cardRect = NSRect(
-        x: scaled(168, scale),
-        y: scaled(148, scale),
-        width: scaled(688, scale),
-        height: scaled(728, scale)
+    let tileRect = NSRect(
+        x: scaled(112, scale),
+        y: scaled(112, scale),
+        width: scaled(800, scale),
+        height: scaled(800, scale)
     )
-    let card = NSBezierPath(
-        roundedRect: cardRect,
-        xRadius: scaled(172, scale),
-        yRadius: scaled(172, scale)
+    let tile = NSBezierPath(
+        roundedRect: tileRect,
+        xRadius: scaled(184, scale),
+        yRadius: scaled(184, scale)
     )
 
     let shadow = NSShadow()
-    shadow.shadowBlurRadius = scaled(42, scale)
-    shadow.shadowOffset = NSSize(width: 0, height: scaled(-18, scale))
-    shadow.shadowColor = NSColor(calibratedWhite: 0, alpha: 0.13)
+    shadow.shadowBlurRadius = scaled(34, scale)
+    shadow.shadowOffset = NSSize(width: 0, height: scaled(-22, scale))
+    shadow.shadowColor = NSColor(calibratedWhite: 0, alpha: 0.22)
     NSGraphicsContext.saveGraphicsState()
     shadow.set()
-    NSColor(calibratedRed: 0.98, green: 0.995, blue: 1.0, alpha: 1).setFill()
-    card.fill()
+    NSColor(calibratedRed: 0.17, green: 0.39, blue: 0.90, alpha: 1).setFill()
+    tile.fill()
     NSGraphicsContext.restoreGraphicsState()
 
-    NSColor.white.withAlphaComponent(0.78).setStroke()
-    card.lineWidth = scaled(18, scale)
-    card.stroke()
+    if let gradient = NSGradient(colors: [
+        NSColor(calibratedRed: 0.18, green: 0.44, blue: 0.96, alpha: 1),
+        NSColor(calibratedRed: 0.35, green: 0.72, blue: 0.98, alpha: 1)
+    ]) {
+        gradient.draw(in: tile, angle: 270)
+    }
+
+    NSColor.white.withAlphaComponent(0.28).setStroke()
+    tile.lineWidth = scaled(12, scale)
+    tile.stroke()
 
     let bubbleRect = NSRect(
-        x: scaled(280, scale),
-        y: scaled(398, scale),
-        width: scaled(464, scale),
-        height: scaled(310, scale)
+        x: scaled(262, scale),
+        y: scaled(414, scale),
+        width: scaled(500, scale),
+        height: scaled(298, scale)
     )
     let bubble = NSBezierPath(
         roundedRect: bubbleRect,
-        xRadius: scaled(72, scale),
-        yRadius: scaled(72, scale)
+        xRadius: scaled(70, scale),
+        yRadius: scaled(70, scale)
     )
-    NSColor(calibratedRed: 0.22, green: 0.46, blue: 0.96, alpha: 1).setFill()
+    let bubbleShadow = NSShadow()
+    bubbleShadow.shadowBlurRadius = scaled(18, scale)
+    bubbleShadow.shadowOffset = NSSize(width: 0, height: scaled(-8, scale))
+    bubbleShadow.shadowColor = NSColor(calibratedWhite: 0, alpha: 0.13)
+    NSGraphicsContext.saveGraphicsState()
+    bubbleShadow.set()
+    NSColor.white.setFill()
     bubble.fill()
+    NSGraphicsContext.restoreGraphicsState()
 
     let tail = NSBezierPath()
-    tail.move(to: NSPoint(x: scaled(430, scale), y: scaled(408, scale)))
-    tail.line(to: NSPoint(x: scaled(362, scale), y: scaled(286, scale)))
-    tail.line(to: NSPoint(x: scaled(536, scale), y: scaled(398, scale)))
+    tail.move(to: NSPoint(x: scaled(458, scale), y: scaled(424, scale)))
+    tail.line(to: NSPoint(x: scaled(382, scale), y: scaled(306, scale)))
+    tail.line(to: NSPoint(x: scaled(570, scale), y: scaled(414, scale)))
     tail.close()
-    NSColor(calibratedRed: 0.22, green: 0.46, blue: 0.96, alpha: 1).setFill()
+    NSColor.white.setFill()
     tail.fill()
 
-    NSColor.white.setStroke()
+    NSColor(calibratedRed: 0.20, green: 0.47, blue: 0.98, alpha: 1).setStroke()
     for (x2, y, width) in [
-        (CGFloat(0), CGFloat(604), CGFloat(264)),
-        (CGFloat(0), CGFloat(524), CGFloat(320)),
-        (CGFloat(0), CGFloat(444), CGFloat(220))
+        (CGFloat(0), CGFloat(616), CGFloat(292)),
+        (CGFloat(0), CGFloat(536), CGFloat(350)),
+        (CGFloat(0), CGFloat(456), CGFloat(238))
     ] {
         let line = NSBezierPath()
         line.move(to: NSPoint(x: scaled(352 + x2, scale), y: scaled(y, scale)))
@@ -97,14 +103,14 @@ func drawIcon(pixelSize: Int) -> NSImage {
     }
 
     let sparkle = NSBezierPath()
-    sparkle.move(to: NSPoint(x: scaled(702, scale), y: scaled(742, scale)))
-    sparkle.line(to: NSPoint(x: scaled(728, scale), y: scaled(800, scale)))
-    sparkle.line(to: NSPoint(x: scaled(754, scale), y: scaled(742, scale)))
-    sparkle.line(to: NSPoint(x: scaled(812, scale), y: scaled(716, scale)))
-    sparkle.line(to: NSPoint(x: scaled(754, scale), y: scaled(690, scale)))
-    sparkle.line(to: NSPoint(x: scaled(728, scale), y: scaled(632, scale)))
-    sparkle.line(to: NSPoint(x: scaled(702, scale), y: scaled(690, scale)))
-    sparkle.line(to: NSPoint(x: scaled(644, scale), y: scaled(716, scale)))
+    sparkle.move(to: NSPoint(x: scaled(720, scale), y: scaled(760, scale)))
+    sparkle.line(to: NSPoint(x: scaled(750, scale), y: scaled(828, scale)))
+    sparkle.line(to: NSPoint(x: scaled(780, scale), y: scaled(760, scale)))
+    sparkle.line(to: NSPoint(x: scaled(848, scale), y: scaled(730, scale)))
+    sparkle.line(to: NSPoint(x: scaled(780, scale), y: scaled(700, scale)))
+    sparkle.line(to: NSPoint(x: scaled(750, scale), y: scaled(632, scale)))
+    sparkle.line(to: NSPoint(x: scaled(720, scale), y: scaled(700, scale)))
+    sparkle.line(to: NSPoint(x: scaled(652, scale), y: scaled(730, scale)))
     sparkle.close()
     NSColor(calibratedRed: 0.99, green: 0.72, blue: 0.20, alpha: 1).setFill()
     sparkle.fill()

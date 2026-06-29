@@ -31,7 +31,7 @@ swiftc \
   "$ROOT/Sources/PromptFavoriteApp/main.swift" \
   -o "$MACOS_DIR/$APP_NAME"
 
-if [ ! -f "$ROOT/assets/PromptFavorite.icns" ]; then
+if [ ! -f "$ROOT/assets/PromptFavorite.icns" ] || [ "$ROOT/scripts/generate_app_icon.swift" -nt "$ROOT/assets/PromptFavorite.icns" ]; then
   swift "$ROOT/scripts/generate_app_icon.swift" "$ROOT/assets" >/dev/null
   iconutil -c icns "$ROOT/assets/PromptFavorite.iconset" -o "$ROOT/assets/PromptFavorite.icns"
 fi
