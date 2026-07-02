@@ -35,6 +35,8 @@ PROMPT_FAVORITE_VERSION="$VERSION" \
 PROMPT_FAVORITE_BUILD="$BUILD_NUMBER" \
 "$ROOT/scripts/build_app.sh" >/dev/null
 
+xattr -cr "$ROOT/dist/Prompt Favorite.app" 2>/dev/null || true
+
 productbuild \
   --component "$ROOT/dist/Prompt Favorite.app" /Applications \
   --sign "$INSTALLER_SIGN_IDENTITY" \

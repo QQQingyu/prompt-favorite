@@ -15,8 +15,10 @@ BUILD_NUMBER="${PROMPT_FAVORITE_BUILD:-1}"
 APP_CATEGORY="${PROMPT_FAVORITE_APP_CATEGORY:-public.app-category.productivity}"
 ENTITLEMENTS="${PROMPT_FAVORITE_ENTITLEMENTS:-}"
 PROVISIONING_PROFILE="${PROMPT_FAVORITE_PROVISIONING_PROFILE:-}"
+APP_STORE_BUILD="${PROMPT_FAVORITE_APP_STORE:-0}"
+TEAM_ID="${PROMPT_FAVORITE_TEAM_ID:-}"
 
-if [ "${PROMPT_FAVORITE_APP_STORE:-0}" = "1" ] && [ -z "$ENTITLEMENTS" ]; then
+if [ "$APP_STORE_BUILD" = "1" ] && [ -z "$ENTITLEMENTS" ]; then
   ENTITLEMENTS="$ROOT/Config/AppStore.entitlements"
 fi
 
@@ -39,6 +41,7 @@ cp "$ROOT/assets/PromptFavorite.icns" "$RESOURCES_DIR/PromptFavorite.icns"
 
 if [ -n "$PROVISIONING_PROFILE" ]; then
   cp "$PROVISIONING_PROFILE" "$CONTENTS_DIR/embedded.provisionprofile"
+  xattr -cr "$CONTENTS_DIR/embedded.provisionprofile" 2>/dev/null || true
 fi
 
 cat > "$CONTENTS_DIR/Info.plist" <<PLIST
@@ -92,11 +95,29 @@ if [ "${PROMPT_FAVORITE_SKIP_CODESIGN:-0}" != "1" ]; then
       } >&2
     fi
   fi
+  if [ "$APP_STORE_BUILD" = "1" ]; then
+    if [ -z "$TEAM_ID" ] && [ -n "$PROVISIONING_PROFILE" ]; then
+      TEAM_ID="$(security cms -D -i "$PROVISIONING_PROFILE" 2>/dev/null | plutil -extract TeamIdentifier.0 raw -o - - 2>/dev/null || true)"
+    fi
+    if [ -z "$TEAM_ID" ]; then
+      echo "error: set PROMPT_FAVORITE_TEAM_ID or provide PROMPT_FAVORITE_PROVISIONING_PROFILE for App Store signing." >&2
+      exit 1
+    fi
+    GENERATED_ENTITLEMENTS="$BUILD_DIR/AppStore.generated.entitlements"
+    cp "$ENTITLEMENTS" "$GENERATED_ENTITLEMENTS"
+    /usr/libexec/PlistBuddy -c "Delete :com.apple.application-identifier" "$GENERATED_ENTITLEMENTS" 2>/dev/null || true
+    /usr/libexec/PlistBuddy -c "Add :com.apple.application-identifier string $TEAM_ID.$BUNDLE_ID" "$GENERATED_ENTITLEMENTS"
+    /usr/libexec/PlistBuddy -c "Delete :com.apple.developer.team-identifier" "$GENERATED_ENTITLEMENTS" 2>/dev/null || true
+    /usr/libexec/PlistBuddy -c "Add :com.apple.developer.team-identifier string $TEAM_ID" "$GENERATED_ENTITLEMENTS"
+    ENTITLEMENTS="$GENERATED_ENTITLEMENTS"
+  fi
+  xattr -cr "$APP_DIR" 2>/dev/null || true
   CODESIGN_ARGS=(--force --deep --sign "$SIGN_IDENTITY")
   if [ -n "$ENTITLEMENTS" ]; then
     CODESIGN_ARGS+=(--entitlements "$ENTITLEMENTS")
   fi
   codesign "${CODESIGN_ARGS[@]}" "$APP_DIR" >/dev/null
+  xattr -cr "$APP_DIR" 2>/dev/null || true
 fi
 
 echo "$APP_DIR"
