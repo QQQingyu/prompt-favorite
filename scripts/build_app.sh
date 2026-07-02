@@ -77,6 +77,8 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <string>Prompt Favorite saves Markdown prompt collections to the folder you choose.</string>
   <key>NSHumanReadableCopyright</key>
   <string>Copyright © 2026</string>
+  <key>ITSAppUsesNonExemptEncryption</key>
+  <false/>
 </dict>
 </plist>
 PLIST

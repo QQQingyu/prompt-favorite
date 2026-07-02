@@ -2,8 +2,11 @@
 import AppKit
 
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-let outputDir = root.appendingPathComponent("assets/app-store-screenshots")
+let outputRoot = root.appendingPathComponent("assets/app-store-screenshots")
+let outputDir = outputRoot.appendingPathComponent("zh-Hans")
+let englishOutputDir = outputRoot.appendingPathComponent("en-US")
 try FileManager.default.createDirectory(at: outputDir, withIntermediateDirectories: true)
+try FileManager.default.createDirectory(at: englishOutputDir, withIntermediateDirectories: true)
 
 let width: CGFloat = 1440
 let height: CGFloat = 900
@@ -84,7 +87,7 @@ func drawInput(_ label: String, value: String, x: CGFloat, y: CGFloat, w: CGFloa
     drawText(value, x + 16, y + 43, w - 32, 24, size: 21)
 }
 
-func render(_ name: String, _ body: () -> Void) {
+func render(_ name: String, directory: URL = outputDir, _ body: () -> Void) {
     let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(width), pixelsHigh: Int(height), bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
@@ -93,7 +96,7 @@ func render(_ name: String, _ body: () -> Void) {
     body()
     NSGraphicsContext.restoreGraphicsState()
     let data = rep.representation(using: .png, properties: [:])!
-    try! data.write(to: outputDir.appendingPathComponent(name))
+    try! data.write(to: directory.appendingPathComponent(name))
 }
 
 render("01-global-capture.png") {
@@ -154,4 +157,62 @@ render("03-markdown-obsidian.png") {
     drawText("```prompt\nReview this PRD and identify only blocking logic issues.\n```", 626, 580, 664, 84, size: 20, color: color(0x111827), mono: true)
 }
 
-print(outputDir.path)
+render("01-global-capture.png", directory: englishOutputDir) {
+    drawText("Capture prompts from any Mac app", 76, 72, 760, 70, size: 43, weight: .bold)
+    drawText("Prompt Favorite captures selected text globally, then lets you review the title, folder, and body before saving.", 78, 142, 760, 58, size: 22, color: color(0x4b5563))
+    drawIcon(1140, 62, 146)
+    drawWindow(76, 244, 650, 446, title: "Browser")
+    drawRounded(112, 320, 574, 54, 10, fill: color(0xeef2ff))
+    drawText("Review this PRD and identify only blocking logic issues.", 136, 335, 520, 24, size: 20, color: color(0x1f2937))
+    drawText("Select text in Chrome, Terminal, Codex, ChatGPT, Claude, Obsidian, or almost any other app.", 116, 408, 540, 120, size: 29, weight: .medium, color: color(0x111827))
+    drawRounded(816, 248, 488, 454, 18, fill: color(0xffffff), stroke: color(0xd1d5db), shadow: true)
+    drawIcon(1004, 286, 112)
+    drawText("Save Prompt", 816, 422, 488, 42, size: 30, weight: .bold, align: .center)
+    drawText("Choose where this prompt should be appended.", 856, 471, 408, 56, size: 21, color: color(0x4b5563), align: .center)
+    drawInput("Title", value: "PRD Review", x: 852, y: 548, w: 416)
+    drawRounded(852, 652, 190, 54, 12, fill: color(0xe5e7eb))
+    drawRounded(1078, 652, 190, 54, 12, fill: color(0x2563eb))
+    drawText("Cancel", 852, 665, 190, 26, size: 22, weight: .medium, color: color(0x374151), align: .center)
+    drawText("Save", 1078, 665, 190, 26, size: 22, weight: .bold, color: .white, align: .center)
+}
+
+render("02-save-preview.png", directory: englishOutputDir) {
+    drawText("Review before saving", 76, 66, 650, 64, size: 43, weight: .bold)
+    drawText("Edit the title, choose a target folder, pick a collection file, then append to Markdown.", 78, 136, 760, 52, size: 22, color: color(0x4b5563))
+    drawWindow(92, 230, 1256, 560, title: "Save Prompt")
+    drawText("Save Prompt", 140, 318, 360, 50, size: 39, weight: .bold)
+    drawText("Choose where this prompt should be appended.", 140, 378, 560, 34, size: 23, color: color(0x6b7280))
+    drawInput("Title", value: "PRD Review", x: 140, y: 440, w: 1120)
+    drawInput("Target folder", value: "~/Documents/Prompt Favorite/Work", x: 140, y: 548, w: 850)
+    drawRounded(1016, 580, 244, 48, 9, fill: color(0xf3f4f6), stroke: color(0xd1d5db))
+    drawText("Choose...", 1016, 591, 244, 24, size: 20, weight: .medium, align: .center)
+    drawInput("Collection file", value: "Favorites.md", x: 140, y: 640, w: 1120)
+    drawRounded(720, 744, 238, 48, 10, fill: color(0xf3f4f6), stroke: color(0xd1d5db))
+    drawRounded(982, 744, 278, 48, 10, fill: color(0x2563eb))
+    drawText("Cancel", 720, 754, 238, 24, size: 21, color: color(0x374151), align: .center)
+    drawText("Save", 982, 754, 278, 24, size: 21, weight: .bold, color: .white, align: .center)
+}
+
+render("03-markdown-obsidian.png", directory: englishOutputDir) {
+    drawText("Plain Markdown output", 76, 66, 620, 64, size: 43, weight: .bold)
+    drawText("Use a standalone folder, an Obsidian vault, or any synced directory you already manage.", 78, 136, 760, 52, size: 22, color: color(0x4b5563))
+    drawWindow(76, 226, 420, 560, title: "Prompt Favorite")
+    drawText("Capture Selected Text", 114, 312, 330, 30, size: 23, weight: .medium)
+    drawLine(114, 360, 456, 360, color: color(0xd1d5db))
+    drawText("Target: ~/Documents/Prompt Favorite", 114, 392, 330, 30, size: 18, color: color(0x9ca3af))
+    drawText("Choose Target Folder...", 114, 436, 330, 30, size: 22)
+    drawText("Collection: Favorites.md", 114, 480, 330, 30, size: 18, color: color(0x9ca3af))
+    drawText("Save Format Settings...", 114, 524, 330, 30, size: 22)
+    drawLine(114, 572, 456, 572, color: color(0xd1d5db))
+    drawText("Global Trigger        Double Option", 114, 606, 330, 30, size: 20)
+    drawText("Capture Behavior      Review", 114, 646, 330, 30, size: 20)
+    drawText("Language              Follow System", 114, 686, 330, 30, size: 20)
+    drawWindow(548, 226, 816, 560, title: "Favorites.md")
+    drawText("---\ntitle: \"Favorites\"\ntags:\n  - prompt-collection\n---", 598, 304, 720, 132, size: 22, color: color(0x374151), mono: true)
+    drawLine(598, 454, 1312, 454, color: color(0xd1d5db))
+    drawText("## 2026-07-02 12:04:16 - PRD Review", 598, 486, 720, 40, size: 26, weight: .bold)
+    drawRounded(598, 552, 720, 134, 12, fill: color(0xf3f4f6), stroke: color(0xe5e7eb))
+    drawText("```prompt\nReview this PRD and identify only blocking logic issues.\n```", 626, 580, 664, 84, size: 20, color: color(0x111827), mono: true)
+}
+
+print(outputRoot.path)
